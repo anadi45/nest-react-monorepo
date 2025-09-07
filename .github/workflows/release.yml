@@ -1,0 +1,127 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Type of release'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      skip_tests:
+        description: 'Skip tests (emergency release only)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for changelog
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install create-package dependencies
+        run: |
+          cd create-package
+          npm ci
+
+      - name: Run tests
+        if: ${{ !github.event.inputs.skip_tests }}
+        run: npm test
+
+      - name: Test CLI tool
+        if: ${{ !github.event.inputs.skip_tests }}
+        run: |
+          cd create-package
+          npm run build
+          cd /tmp
+          node $GITHUB_WORKSPACE/create-package/bin/cli.js test-release --no-install
+          test -d test-release/client
+          test -d test-release/server
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --reverse)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s (%h)" --reverse)
+          fi
+          
+          # Save changelog to file
+          cat > CHANGELOG.md << EOF
+          ## What's Changed
+          
+          $COMMITS
+          
+          ### Features in this release:
+          - ⚡ NestJS backend with TypeScript
+          - ⚛️ React frontend with TypeScript and Vite  
+          - 🏗️ Nx monorepo architecture
+          - 🐳 Docker support (development & production)
+          - 🧪 Jest testing setup
+          - 🔧 ESLint configuration
+          - 🚀 Hot reload development
+          
+          ### Usage:
+          \`\`\`bash
+          npx create-nest-react-monorepo my-project
+          cd my-project
+          npm run dev
+          \`\`\`
+          EOF
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Create manual release commit
+        run: |
+          cd create-package
+          
+          # Bump version based on input
+          NEW_VERSION=$(npm version ${{ github.event.inputs.release_type }} --no-git-tag-version | sed 's/^v//')
+          echo "New version: $NEW_VERSION"
+          
+          # Commit version bump
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add package.json
+          git commit -m "chore: manual release v${NEW_VERSION}"
+          
+          # Create tag
+          git tag -a "v${NEW_VERSION}" -m "Manual release v${NEW_VERSION}"
+          
+          # Push changes
+          git push origin main
+          git push origin "v${NEW_VERSION}"
+          
+          echo "Manual release v${NEW_VERSION} created and pushed!"
+
+      - name: Trigger NPM Publish
+        run: |
+          echo "✅ Manual release created! The push to main will trigger automatic NPM publish."

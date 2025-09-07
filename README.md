@@ -167,6 +167,36 @@ Learn more:
 - [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 - [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
+## 📦 NPM Package
+
+This template is available as an npm package for easy project scaffolding:
+
+```bash
+npx create-nest-react-monorepo my-awesome-app
+cd my-awesome-app
+npm run dev
+```
+
+### Publishing Status
+
+[![npm version](https://badge.fury.io/js/create-nest-react-monorepo.svg)](https://badge.fury.io/js/create-nest-react-monorepo)
+[![Build Status](https://github.com/anadi45/nest-react-monorepo/workflows/Test%20Suite/badge.svg)](https://github.com/anadi45/nest-react-monorepo/actions)
+
+The package is **automatically published via GitHub Actions on every PR merge to main** using conventional commits for version bumping. See [`.github/RELEASE_PROCESS.md`](.github/RELEASE_PROCESS.md) for details.
+
+## 🤖 Automated Workflows
+
+This repository includes comprehensive GitHub Actions workflows:
+
+- **🧪 Continuous Integration**: Automated testing on every push/PR
+- **📦 Continuous Deployment**: Automatically publishes to npm on PR merge to main
+- **🔄 Dependency Updates**: Dependabot with auto-merge for passing tests
+- **🤖 Smart Versioning**: Automatic version bumping based on conventional commits
+
+See [`.github/SETUP_GUIDE.md`](.github/SETUP_GUIDE.md) for setup instructions.
+
+## 🌟 Community
+
 And join the Nx community:
 - [Discord](https://go.nx.dev/community)
 - [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
