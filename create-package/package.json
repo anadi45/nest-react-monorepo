@@ -1,0 +1,50 @@
+{
+  "name": "create-nest-react-monorepo",
+  "version": "1.0.0",
+  "description": "Create a new NestJS + React monorepo with TypeScript, powered by Nx",
+  "main": "index.js",
+  "bin": {
+    "create-nest-react-monorepo": "./bin/cli.js"
+  },
+  "scripts": {
+    "build": "node build.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "nestjs",
+    "react",
+    "monorepo",
+    "nx",
+    "typescript",
+    "template",
+    "starter",
+    "boilerplate",
+    "fullstack"
+  ],
+  "author": "anadi45",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anadi45/nest-react-monorepo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/anadi45/nest-react-monorepo/issues"
+  },
+  "homepage": "https://github.com/anadi45/nest-react-monorepo#readme",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^9.4.1",
+    "fs-extra": "^11.1.1",
+    "ora": "^5.4.1",
+    "prompts": "^2.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    "template/",
+    "README.md",
+    "LICENSE"
+  ]
+}
