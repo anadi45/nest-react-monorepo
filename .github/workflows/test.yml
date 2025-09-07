@@ -55,6 +55,10 @@ jobs:
           cd create-package
           npm ci
 
+      - name: Clean template directory
+        run: |
+          rm -rf create-package/template
+
       - name: Build template
         run: |
           cd create-package

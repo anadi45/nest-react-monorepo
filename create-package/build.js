@@ -4,8 +4,11 @@ const path = require('path');
 async function build() {
   console.log('Building template package...');
 
-  // Ensure template directory exists
+  // Clean and recreate template directory
   const templateDir = path.join(__dirname, 'template');
+  if (fs.existsSync(templateDir)) {
+    fs.removeSync(templateDir);
+  }
   fs.ensureDirSync(templateDir);
 
   // Copy all template files from parent directory
@@ -33,7 +36,15 @@ async function build() {
     const targetPath = path.join(templateDir, file);
     
     if (fs.existsSync(sourcePath)) {
-      fs.copySync(sourcePath, targetPath);
+      fs.copySync(sourcePath, targetPath, {
+        filter: (src, dest) => {
+          // Skip node_modules and dist directories
+          if (src.includes('node_modules') || src.includes('dist')) {
+            return false;
+          }
+          return true;
+        }
+      });
       console.log(`✓ Copied ${file}`);
     }
   }

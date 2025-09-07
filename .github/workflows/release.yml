@@ -42,6 +42,10 @@ jobs:
           cd create-package
           npm ci
 
+      - name: Clean template directory
+        run: |
+          rm -rf create-package/template
+
       - name: Run tests
         if: ${{ !github.event.inputs.skip_tests }}
         run: npm test
