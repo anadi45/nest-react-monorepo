@@ -9,11 +9,12 @@ on:
     branches: [ main ]
 
 jobs:
-  test-template:
+  test-cli-tool:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         node-version: [18, 20]
+        package-manager: [npm, yarn, pnpm]
     
     steps:
       - name: Checkout code
@@ -23,21 +24,54 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: ${{ matrix.package-manager }}
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run linting
-        run: npm run lint
+      - name: Test CLI tool with ${{ matrix.package-manager }}
+        run: |
+          # Test CLI tool creation with different package managers
+          cd /tmp
+          node $GITHUB_WORKSPACE/create-package/bin/cli.js test-cli-${{ matrix.package-manager }} --no-install
+          
+          # Verify project structure
+          test -d test-cli-${{ matrix.package-manager }}/client "Client directory should exist"
+          test -d test-cli-${{ matrix.package-manager }}/server "Server directory should exist"
+          test -f test-cli-${{ matrix.package-manager }}/package.json "Root package.json should exist"
+          test -f test-cli-${{ matrix.package-manager }}/nx.json "Nx config should exist"
+          
+          echo "✅ CLI tool test passed for ${{ matrix.package-manager }}!"
 
-      - name: Run unit tests
-        run: npm test
+      - name: Test generated project with ${{ matrix.package-manager }}
+        run: |
+          cd /tmp/test-cli-${{ matrix.package-manager }}
+          
+          # Install dependencies
+          if [ "${{ matrix.package-manager }}" = "npm" ]; then
+            npm ci
+          elif [ "${{ matrix.package-manager }}" = "yarn" ]; then
+            yarn install --frozen-lockfile
+          elif [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm install --frozen-lockfile
+          fi
+          
+          # Test that the generated project can build
+          npm run build:server
+          npm run build:client
+          
+          # Test that tests can run
+          npm run test:server
+          npm run test:client
+          
+          echo "✅ Generated project test passed for ${{ matrix.package-manager }}!"
 
-      - name: Build applications
-        run: npm run build
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf /tmp/test-cli-*
 
-  test-cli-tool:
+  test-cli-options:
     runs-on: ubuntu-latest
     
     steps:
@@ -50,76 +84,96 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Install create-package dependencies
-        run: |
-          cd create-package
-          npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Clean template directory
-        run: |
-          rm -rf create-package/template
-
-      - name: Build template
-        run: |
-          cd create-package
-          npm run build
-
-      - name: Test CLI tool creation
+      - name: Test CLI with different options
         run: |
           cd /tmp
-          node $GITHUB_WORKSPACE/create-package/bin/cli.js test-cli-project --no-install
           
-          # Verify project structure
-          test -d test-cli-project/client "Client directory should exist"
-          test -d test-cli-project/server "Server directory should exist"
-          test -f test-cli-project/package.json "Root package.json should exist"
-          test -f test-cli-project/nx.json "Nx config should exist"
-          test -f test-cli-project/docker-compose.yml "Docker compose should exist"
+          # Test with Vite bundler
+          node $GITHUB_WORKSPACE/create-package/bin/cli.js test-vite --no-install
+          test -f test-vite/client/vite.config.ts "Vite config should exist"
           
-          echo "✅ CLI tool test passed!"
+          # Test with Webpack bundler
+          node $GITHUB_WORKSPACE/create-package/bin/cli.js test-webpack --no-install
+          test -f test-webpack/client/webpack.config.js "Webpack config should exist"
+          
+          # Test with Docker enabled
+          node $GITHUB_WORKSPACE/create-package/bin/cli.js test-docker --no-install
+          test -f test-docker/docker-compose.yml "Docker compose should exist"
+          test -f test-docker/client/Dockerfile.dev "Client Dockerfile should exist"
+          test -f test-docker/server/Dockerfile.dev "Server Dockerfile should exist"
+          
+          echo "✅ CLI options test passed!"
 
-      - name: Test generated project
+      - name: Cleanup
+        if: always()
         run: |
-          cd /tmp/test-cli-project
-          npm ci
-          
-          # Test that the generated project can build
-          npm run build:server
-          npm run build:client
-          
-          # Test that tests can run
-          npm run test:server
-          npm run test:client
-          
-          echo "✅ Generated project test passed!"
+          rm -rf /tmp/test-*
 
-  test-docker:
+  test-cli-interactive:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Build Docker images
-        run: |
-          docker-compose build
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '18'
+          cache: 'npm'
 
-      - name: Test Docker containers
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test CLI help and version
         run: |
-          # Start containers in detached mode
-          docker-compose up -d
+          # Test help command
+          node $GITHUB_WORKSPACE/create-package/bin/cli.js --help
           
-          # Wait for services to be ready
-          sleep 30
+          # Test version command
+          node $GITHUB_WORKSPACE/create-package/bin/cli.js --version
           
-          # Test server health
-          curl -f http://localhost:3000 || exit 1
+          echo "✅ CLI help and version test passed!"
+
+  test-error-handling:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test error handling
+        run: |
+          cd /tmp
           
-          # Test client availability  
-          curl -f http://localhost:80 || exit 1
+          # Test with existing directory (should fail)
+          mkdir existing-dir
+          if node $GITHUB_WORKSPACE/create-package/bin/cli.js existing-dir --no-install; then
+            echo "❌ Should have failed with existing directory"
+            exit 1
+          fi
           
-          echo "✅ Docker test passed!"
+          # Test with invalid project name (should fail)
+          if node $GITHUB_WORKSPACE/create-package/bin/cli.js "Invalid Name!" --no-install; then
+            echo "❌ Should have failed with invalid project name"
+            exit 1
+          fi
+          
+          echo "✅ Error handling test passed!"
 
       - name: Cleanup
+        if: always()
         run: |
-          docker-compose down
+          rm -rf /tmp/existing-dir

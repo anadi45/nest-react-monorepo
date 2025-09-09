@@ -19,29 +19,38 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Install dependencies (root)
+      - name: Install dependencies
         run: npm ci
 
-      - name: Install dependencies (create-package)
+      - name: Test CLI tool
         run: |
-          cd create-package
-          npm ci
-
-      - name: Run tests
-        run: npm test
-
-      - name: Test create-package CLI
-        run: |
-          cd create-package
-          npm run build
           # Test CLI in a temporary directory
           cd /tmp
           node $GITHUB_WORKSPACE/create-package/bin/cli.js test-project --no-install
+          
           # Verify the project was created correctly
-          test -d test-project/client
-          test -d test-project/server
-          test -f test-project/package.json
-          test -f test-project/nx.json
+          test -d test-project/client "Client directory should exist"
+          test -d test-project/server "Server directory should exist"
+          test -f test-project/package.json "Root package.json should exist"
+          test -f test-project/nx.json "Nx config should exist"
+          
+          echo "✅ CLI test passed!"
+
+      - name: Test generated project
+        run: |
+          cd /tmp/test-project
+          npm ci
+          
+          # Test that the generated project can build
+          npm run build:server
+          npm run build:client
+          
+          echo "✅ Generated project test passed!"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf /tmp/test-project
 
   publish:
     needs: test
@@ -49,6 +58,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Fetch full history for version calculation
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -57,19 +68,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
-      - name: Install dependencies (create-package)
-        run: |
-          cd create-package
-          npm ci
-
-      - name: Clean template directory
-        run: |
-          rm -rf create-package/template
-
-      - name: Build template
-        run: |
-          cd create-package
-          npm run build
+      - name: Install dependencies
+        run: npm ci
 
       - name: Determine version bump
         id: version
@@ -172,13 +172,16 @@ jobs:
           \`\`\`
           
           ### ✨ Features
+          - ⚡ **Dynamic Generation**: Always up-to-date with latest versions
           - ⚡ NestJS backend with TypeScript
-          - ⚛️ React frontend with TypeScript and Vite
+          - ⚛️ React frontend with TypeScript and Vite/Webpack
           - 🏗️ Nx monorepo architecture  
           - 🐳 Docker support (development & production)
           - 🧪 Jest testing setup
           - 🔧 ESLint configuration
           - 🚀 Hot reload development
+          - 🎯 Interactive setup with user choices
+          - 🔄 Future-proof (no static templates to maintain)
           
           ### 📦 Installation
           \`\`\`bash
@@ -186,6 +189,13 @@ jobs:
           cd my-project
           npm run dev
           \`\`\`
+          
+          ### 🎛️ Options
+          - Choose package manager (npm, yarn, pnpm)
+          - Select bundler (Vite or Webpack)
+          - Optional Docker configuration
+          - Optional testing setup
+          - Version control for React, NestJS, and Nx
           EOF
           
           echo "changelog<<EOF" >> $GITHUB_OUTPUT

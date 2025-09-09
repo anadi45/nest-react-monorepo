@@ -37,15 +37,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install create-package dependencies
-        run: |
-          cd create-package
-          npm ci
-
-      - name: Clean template directory
-        run: |
-          rm -rf create-package/template
-
       - name: Run tests
         if: ${{ !github.event.inputs.skip_tests }}
         run: npm test
@@ -53,12 +44,34 @@ jobs:
       - name: Test CLI tool
         if: ${{ !github.event.inputs.skip_tests }}
         run: |
-          cd create-package
-          npm run build
+          # Test CLI in a temporary directory
           cd /tmp
           node $GITHUB_WORKSPACE/create-package/bin/cli.js test-release --no-install
-          test -d test-release/client
-          test -d test-release/server
+          
+          # Verify the project was created correctly
+          test -d test-release/client "Client directory should exist"
+          test -d test-release/server "Server directory should exist"
+          test -f test-release/package.json "Root package.json should exist"
+          test -f test-release/nx.json "Nx config should exist"
+          
+          echo "✅ CLI test passed!"
+
+      - name: Test generated project
+        if: ${{ !github.event.inputs.skip_tests }}
+        run: |
+          cd /tmp/test-release
+          npm ci
+          
+          # Test that the generated project can build
+          npm run build:server
+          npm run build:client
+          
+          echo "✅ Generated project test passed!"
+
+      - name: Cleanup test files
+        if: always()
+        run: |
+          rm -rf /tmp/test-release
 
       - name: Generate changelog
         id: changelog
@@ -77,21 +90,31 @@ jobs:
           
           $COMMITS
           
-          ### Features in this release:
+          ### ✨ Features in this release:
+          - ⚡ **Dynamic Generation**: Always up-to-date with latest versions
           - ⚡ NestJS backend with TypeScript
-          - ⚛️ React frontend with TypeScript and Vite  
+          - ⚛️ React frontend with TypeScript and Vite/Webpack
           - 🏗️ Nx monorepo architecture
           - 🐳 Docker support (development & production)
           - 🧪 Jest testing setup
           - 🔧 ESLint configuration
           - 🚀 Hot reload development
+          - 🎯 Interactive setup with user choices
+          - 🔄 Future-proof (no static templates to maintain)
           
-          ### Usage:
+          ### 🚀 Usage:
           \`\`\`bash
           npx create-nest-react-monorepo my-project
           cd my-project
           npm run dev
           \`\`\`
+          
+          ### 🎛️ Options:
+          - Choose package manager (npm, yarn, pnpm)
+          - Select bundler (Vite or Webpack)
+          - Optional Docker configuration
+          - Optional testing setup
+          - Version control for React, NestJS, and Nx
           EOF
           
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
