@@ -23,7 +23,6 @@
     "docker:dev": "docker-compose -f docker-compose.dev.yml up",
     "graph": "nx graph"
   },
-  "private": true,
   "devDependencies": {
     "@eslint/js": "^9.8.0",
     "@nestjs/schematics": "^11.0.0",
