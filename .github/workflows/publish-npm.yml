@@ -32,8 +32,73 @@ jobs:
           cd create-package
           npm ci
 
-      - name: Determine version bump
-        id: version
+      # Automatic version bumping is disabled - rely on manual version updates
+      # - name: Check if version was manually updated
+      #   id: manual_version_check
+      #   run: |
+      #     cd create-package
+      #     
+      #     # Get current version
+      #     CURRENT_VERSION=$(node -p "require('./package.json').version")
+      #     echo "Current version: $CURRENT_VERSION"
+      #     
+      #     # Check if version was manually updated by looking at recent commits
+      #     # Look for commits that mention version changes
+      #     if git log --oneline -10 | grep -q "version\|bump\|release"; then
+      #       echo "Version appears to be manually updated, skipping automatic version bump"
+      #       echo "is_manual_update=true" >> $GITHUB_OUTPUT
+      #       echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+      #     else
+      #       echo "No manual version update detected, proceeding with automatic version bump"
+      #       echo "is_manual_update=false" >> $GITHUB_OUTPUT
+      #     fi
+
+      # - name: Determine version bump
+      #   id: version
+      #   if: steps.manual_version_check.outputs.is_manual_update == 'false'
+      #   run: |
+      #     cd create-package
+      #     
+      #     # Get current version
+      #     CURRENT_VERSION=$(node -p "require('./package.json').version")
+      #     echo "Current version: $CURRENT_VERSION"
+      #     
+      #     # Check commit messages since last release to determine bump type
+      #     LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+      #     
+      #     if [ -z "$LAST_TAG" ]; then
+      #       # No previous tags, this is the first release
+      #       BUMP_TYPE="minor"
+      #       echo "First release, using minor bump"
+      #     else
+      #       # Get commits since last tag
+      #       COMMITS=$(git log ${LAST_TAG}..HEAD --oneline)
+      #       echo "Commits since ${LAST_TAG}:"
+      #       echo "$COMMITS"
+      #       
+      #       # Determine bump type based on commit messages
+      #       if echo "$COMMITS" | grep -q "BREAKING CHANGE\|^feat!:\|^fix!:\|^chore!:"; then
+      #         BUMP_TYPE="major"
+      #       elif echo "$COMMITS" | grep -q "^feat:"; then
+      #         BUMP_TYPE="minor"
+      #       elif echo "$COMMITS" | grep -q "^fix:\|^docs:\|^style:\|^refactor:\|^perf:\|^test:\|^chore:"; then
+      #         BUMP_TYPE="patch"
+      #       else
+      #         # Default to patch if no conventional commit format
+      #         BUMP_TYPE="patch"
+      #       fi
+      #     fi
+      #     
+      #     echo "Determined bump type: $BUMP_TYPE"
+      #     echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+      #     
+      #     # Calculate new version
+      #     NEW_VERSION=$(npm version $BUMP_TYPE --no-git-tag-version | sed 's/^v//')
+      #     echo "New version: $NEW_VERSION"
+      #     echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if version was manually updated
+        id: version_check
         run: |
           cd create-package
           
@@ -41,50 +106,15 @@ jobs:
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "Current version: $CURRENT_VERSION"
           
-          # Check commit messages since last release to determine bump type
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
-          if [ -z "$LAST_TAG" ]; then
-            # No previous tags, this is the first release
-            BUMP_TYPE="minor"
-            echo "First release, using minor bump"
-          else
-            # Get commits since last tag
-            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline)
-            echo "Commits since ${LAST_TAG}:"
-            echo "$COMMITS"
-            
-            # Determine bump type based on commit messages
-            if echo "$COMMITS" | grep -q "BREAKING CHANGE\|^feat!:\|^fix!:\|^chore!:"; then
-              BUMP_TYPE="major"
-            elif echo "$COMMITS" | grep -q "^feat:"; then
-              BUMP_TYPE="minor"
-            elif echo "$COMMITS" | grep -q "^fix:\|^docs:\|^style:\|^refactor:\|^perf:\|^test:\|^chore:"; then
-              BUMP_TYPE="patch"
-            else
-              # Default to patch if no conventional commit format
-              BUMP_TYPE="patch"
-            fi
-          fi
-          
-          echo "Determined bump type: $BUMP_TYPE"
-          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
-          
-          # Calculate new version
-          NEW_VERSION=$(npm version $BUMP_TYPE --no-git-tag-version | sed 's/^v//')
-          echo "New version: $NEW_VERSION"
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Check if version changed
-        id: version_check
-        run: |
-          cd create-package
-          if git diff --quiet package.json; then
-            echo "No version change needed, skipping publish"
-            echo "should_publish=false" >> $GITHUB_OUTPUT
-          else
-            echo "Version changed, proceeding with publish"
+          # Check if version was manually updated by looking at recent commits
+          # Look for commits that mention version changes
+          if git log --oneline -10 | grep -q "version\|bump\|release"; then
+            echo "Manual version update detected, proceeding with publish"
             echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "No manual version update detected, skipping publish"
+            echo "should_publish=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Publish to NPM
@@ -100,11 +130,11 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add create-package/package.json
-          git commit -m "chore: bump version to v${{ steps.version.outputs.new_version }}"
-          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
-          git push origin main
-          git push origin "v${{ steps.version.outputs.new_version }}"
+          
+          # Manual version update - just create tag, no commit needed
+          echo "Creating tag for manually updated version: v${{ steps.version_check.outputs.new_version }}"
+          git tag -a "v${{ steps.version_check.outputs.new_version }}" -m "Release v${{ steps.version_check.outputs.new_version }}"
+          git push origin "v${{ steps.version_check.outputs.new_version }}"
 
       - name: Generate changelog
         if: steps.version_check.outputs.should_publish == 'true'
