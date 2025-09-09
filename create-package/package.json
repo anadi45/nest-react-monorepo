@@ -1,6 +1,6 @@
 {
   "name": "nest-react-monorepo",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Create a new NestJS + React monorepo with TypeScript, powered by Nx",
   "main": "index.js",
   "bin": {
@@ -25,6 +25,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/anadi45/nest-react-monorepo.git"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
   },
   "bugs": {
     "url": "https://github.com/anadi45/nest-react-monorepo/issues"
