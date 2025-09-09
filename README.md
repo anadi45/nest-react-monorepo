@@ -63,11 +63,22 @@ When you run the CLI, it will:
 ```
 my-awesome-app/
 ├── client/                 # React frontend application
+│   ├── src/               # React source code
+│   ├── public/            # Static assets
+│   ├── index.html         # HTML template
+│   ├── vite.config.ts     # Vite configuration
+│   └── package.json       # Client dependencies
 ├── server/                 # NestJS backend application
-├── docker-compose.yml      # Production docker compose
-├── docker-compose.dev.yml  # Development docker compose
-├── nx.json                # Nx workspace configuration
-└── package.json           # Root package.json with workspace scripts
+│   ├── src/               # NestJS source code
+│   ├── webpack.config.js  # Webpack configuration
+│   └── package.json       # Server dependencies
+├── client-e2e/            # Client end-to-end tests
+├── server-e2e/            # Server end-to-end tests
+├── packages/              # Shared packages (if any)
+├── docker-compose.yml     # Docker Compose configuration (optional)
+├── nx.json               # Nx workspace configuration
+├── tsconfig.base.json    # Base TypeScript configuration
+└── package.json          # Root package.json with workspace scripts
 ```
 
 ## 🏃‍♂️ Quick Start
@@ -82,3 +93,27 @@ npm run dev
 
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3000
+
+## 🐳 Docker Usage
+
+If you enabled Docker during setup, you can also run the project using Docker:
+
+```bash
+# Build and start with Docker
+npm run docker:build
+npm run docker:up
+
+# Or use docker-compose directly
+docker-compose up --build
+
+# Stop containers
+npm run docker:down
+# or
+docker-compose down
+```
+
+**Docker Benefits:**
+- Consistent environment across different machines
+- Easy deployment to production
+- Isolated dependencies
+- No need to install Node.js locally

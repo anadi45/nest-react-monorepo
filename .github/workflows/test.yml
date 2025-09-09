@@ -102,8 +102,8 @@ jobs:
           # Test with Docker enabled
           node $GITHUB_WORKSPACE/create-package/bin/cli.js test-docker --no-install
           test -f test-docker/docker-compose.yml "Docker compose should exist"
-          test -f test-docker/client/Dockerfile.dev "Client Dockerfile should exist"
-          test -f test-docker/server/Dockerfile.dev "Server Dockerfile should exist"
+          test -f test-docker/client/Dockerfile "Client Dockerfile should exist"
+          test -f test-docker/server/Dockerfile "Server Dockerfile should exist"
           
           echo "✅ CLI options test passed!"
 

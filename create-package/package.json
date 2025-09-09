@@ -42,7 +42,6 @@
   },
   "files": [
     "bin/",
-    "template/",
     "README.md",
     "LICENSE"
   ]

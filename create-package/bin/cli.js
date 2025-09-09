@@ -217,6 +217,15 @@ program
       }
       
       console.log(chalk.cyan('  npm run dev'));
+      
+      // Show Docker instructions if Docker was enabled
+      if (config.addDocker) {
+        console.log(chalk.blue('\n🐳 Docker Usage:'));
+        console.log(chalk.cyan('  npm run docker:build'));
+        console.log(chalk.cyan('  npm run docker:up'));
+        console.log(chalk.gray('  # Or: docker-compose up --build'));
+      }
+      
       console.log(chalk.blue('\nHappy coding! 🎉\n'));
 
     } catch (error) {
