@@ -1,5 +1,5 @@
 {
-  "name": "@nest-react-monorepo/source",
+  "name": "nest-react-monorepo",
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
