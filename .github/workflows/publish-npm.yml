@@ -32,8 +32,29 @@ jobs:
           cd create-package
           npm ci
 
+      - name: Check if version was manually updated
+        id: manual_version_check
+        run: |
+          cd create-package
+          
+          # Get current version
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Check if version was manually updated by looking at recent commits
+          # Look for commits that mention version changes
+          if git log --oneline -10 | grep -q "version\|bump\|release"; then
+            echo "Version appears to be manually updated, skipping automatic version bump"
+            echo "is_manual_update=true" >> $GITHUB_OUTPUT
+            echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "No manual version update detected, proceeding with automatic version bump"
+            echo "is_manual_update=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Determine version bump
         id: version
+        if: steps.manual_version_check.outputs.is_manual_update == 'false'
         run: |
           cd create-package
           
@@ -79,12 +100,22 @@ jobs:
         id: version_check
         run: |
           cd create-package
-          if git diff --quiet package.json; then
-            echo "No version change needed, skipping publish"
-            echo "should_publish=false" >> $GITHUB_OUTPUT
-          else
-            echo "Version changed, proceeding with publish"
+          
+          if [ "${{ steps.manual_version_check.outputs.is_manual_update }}" == "true" ]; then
+            # Manual version update detected, use current version
+            echo "Manual version update detected, using current version: ${{ steps.manual_version_check.outputs.current_version }}"
             echo "should_publish=true" >> $GITHUB_OUTPUT
+            echo "new_version=${{ steps.manual_version_check.outputs.current_version }}" >> $GITHUB_OUTPUT
+          else
+            # Check if automatic version bump changed anything
+            if git diff --quiet package.json; then
+              echo "No version change needed, skipping publish"
+              echo "should_publish=false" >> $GITHUB_OUTPUT
+            else
+              echo "Version changed, proceeding with publish"
+              echo "should_publish=true" >> $GITHUB_OUTPUT
+              echo "new_version=${{ steps.version.outputs.new_version }}" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Publish to NPM
@@ -100,11 +131,20 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add create-package/package.json
-          git commit -m "chore: bump version to v${{ steps.version.outputs.new_version }}"
-          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
-          git push origin main
-          git push origin "v${{ steps.version.outputs.new_version }}"
+          
+          if [ "${{ steps.manual_version_check.outputs.is_manual_update }}" == "true" ]; then
+            # Manual version update - just create tag, no commit needed
+            echo "Creating tag for manually updated version: v${{ steps.version_check.outputs.new_version }}"
+            git tag -a "v${{ steps.version_check.outputs.new_version }}" -m "Release v${{ steps.version_check.outputs.new_version }}"
+            git push origin "v${{ steps.version_check.outputs.new_version }}"
+          else
+            # Automatic version bump - commit the version change and create tag
+            git add create-package/package.json
+            git commit -m "chore: bump version to v${{ steps.version_check.outputs.new_version }}"
+            git tag -a "v${{ steps.version_check.outputs.new_version }}" -m "Release v${{ steps.version_check.outputs.new_version }}"
+            git push origin main
+            git push origin "v${{ steps.version_check.outputs.new_version }}"
+          fi
 
       - name: Generate changelog
         if: steps.version_check.outputs.should_publish == 'true'

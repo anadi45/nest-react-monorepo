@@ -131,28 +131,62 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
+      - name: Check if version was manually updated
+        id: manual_version_check
+        run: |
+          cd create-package
+          
+          # Get current version
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Check if version was manually updated by looking at recent commits
+          # Look for commits that mention version changes
+          if git log --oneline -10 | grep -q "version\|bump\|release"; then
+            echo "Version appears to be manually updated, skipping automatic version bump"
+            echo "is_manual_update=true" >> $GITHUB_OUTPUT
+            echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "No manual version update detected, proceeding with automatic version bump"
+            echo "is_manual_update=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create manual release commit
         run: |
           cd create-package
           
-          # Bump version based on input
-          NEW_VERSION=$(npm version ${{ github.event.inputs.release_type }} --no-git-tag-version | sed 's/^v//')
-          echo "New version: $NEW_VERSION"
-          
-          # Commit version bump
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add package.json
-          git commit -m "chore: manual release v${NEW_VERSION}"
-          
-          # Create tag
-          git tag -a "v${NEW_VERSION}" -m "Manual release v${NEW_VERSION}"
-          
-          # Push changes
-          git push origin main
-          git push origin "v${NEW_VERSION}"
-          
-          echo "Manual release v${NEW_VERSION} created and pushed!"
+          if [ "${{ steps.manual_version_check.outputs.is_manual_update }}" == "true" ]; then
+            # Manual version update detected, use current version
+            NEW_VERSION="${{ steps.manual_version_check.outputs.current_version }}"
+            echo "Manual version update detected, using current version: $NEW_VERSION"
+            
+            # Just create tag, no commit needed
+            git config user.name "GitHub Actions"
+            git config user.email "actions@github.com"
+            git tag -a "v${NEW_VERSION}" -m "Manual release v${NEW_VERSION}"
+            git push origin "v${NEW_VERSION}"
+            
+            echo "Manual release v${NEW_VERSION} created and pushed!"
+          else
+            # Bump version based on input
+            NEW_VERSION=$(npm version ${{ github.event.inputs.release_type }} --no-git-tag-version | sed 's/^v//')
+            echo "New version: $NEW_VERSION"
+            
+            # Commit version bump
+            git config user.name "GitHub Actions"
+            git config user.email "actions@github.com"
+            git add package.json
+            git commit -m "chore: manual release v${NEW_VERSION}"
+            
+            # Create tag
+            git tag -a "v${NEW_VERSION}" -m "Manual release v${NEW_VERSION}"
+            
+            # Push changes
+            git push origin main
+            git push origin "v${NEW_VERSION}"
+            
+            echo "Manual release v${NEW_VERSION} created and pushed!"
+          fi
 
       - name: Trigger NPM Publish
         run: |
