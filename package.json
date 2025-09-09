@@ -1,9 +1,9 @@
 {
-  "name": "create-nest-react-monorepo-dev",
+  "name": "nest-react-monorepo-dev",
   "version": "0.0.0",
   "license": "MIT",
   "private": true,
-  "description": "Development environment for create-nest-react-monorepo npm package",
+  "description": "Development environment for nest-react-monorepo npm package",
   "scripts": {
     "test": "node create-package/bin/cli.js test-project --no-install",
     "clean": "rm -rf test-project"

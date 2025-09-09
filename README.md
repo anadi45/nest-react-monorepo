@@ -1,4 +1,4 @@
-# Create NestJS + React Monorepo
+# nest-react-monorepo
 
 A CLI tool that generates modern, production-ready monorepos featuring NestJS backend and React frontend with TypeScript, powered by Nx.
 
@@ -82,11 +82,3 @@ npm run dev
 
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3000
-
-## 🌟 Community
-
-Join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)

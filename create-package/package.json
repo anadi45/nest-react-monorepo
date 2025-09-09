@@ -1,6 +1,6 @@
 {
-  "name": "create-nest-react-monorepo",
-  "version": "1.0.0",
+  "name": "nest-react-monorepo",
+  "version": "0.0.0",
   "description": "Create a new NestJS + React monorepo with TypeScript, powered by Nx",
   "main": "index.js",
   "bin": {

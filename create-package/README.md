@@ -1,4 +1,4 @@
-# create-nest-react-monorepo
+# nest-react-monorepo
 
 A CLI tool to create a new NestJS + React monorepo with TypeScript, powered by Nx.
 
