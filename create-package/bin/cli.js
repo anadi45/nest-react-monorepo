@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { Command } = require('commander');
-const chalk = require('chalk');
+const kleur = require('kleur');
 const fs = require('fs-extra');
 const path = require('path');
 const ora = require('ora');
@@ -21,7 +21,7 @@ program
   .option('--nestjs-version <version>', 'NestJS version to use', 'latest')
   .option('--nx-version <version>', 'Nx version to use', 'latest')
   .action(async (projectName, options) => {
-    console.log(chalk.blue.bold('\n🚀 Create NestJS + React Monorepo\n'));
+    console.log(kleur.blue().bold('\n🚀 Create NestJS + React Monorepo\n'));
 
     let targetDir = projectName;
     let config = {};
@@ -43,7 +43,7 @@ program
       });
 
       if (!response.projectName) {
-        console.log(chalk.red('Operation cancelled.'));
+        console.log(kleur.red('Operation cancelled.'));
         process.exit(0);
       }
 
@@ -54,7 +54,7 @@ program
 
     // Check if directory exists
     if (fs.existsSync(projectPath)) {
-      console.log(chalk.red(`Error: Directory ${targetDir} already exists.`));
+      console.log(kleur.red(`Error: Directory ${targetDir} already exists.`));
       process.exit(1);
     }
 
@@ -154,6 +154,11 @@ program
       
       spinner.succeed('React application generated');
 
+      // Fix Vite configuration if using Vite bundler
+      if (config.bundler === 'vite') {
+        await fixViteConfig();
+      }
+
       // Step 4: Generate NestJS app
       spinner.start('Generating NestJS application...');
       
@@ -201,35 +206,35 @@ program
           spinner.succeed('Dependencies installed');
         } catch (error) {
           spinner.fail('Failed to install dependencies');
-          console.log(chalk.yellow('You can install dependencies manually by running:'));
-          console.log(chalk.cyan(`  cd ${targetDir}`));
-          console.log(chalk.cyan(`  ${config.packageManager} install`));
+          console.log(kleur.yellow('You can install dependencies manually by running:'));
+          console.log(kleur.cyan(`  cd ${targetDir}`));
+          console.log(kleur.cyan(`  ${config.packageManager} install`));
         }
       }
 
       // Success message
-      console.log(chalk.green.bold('\n✅ Success! Your monorepo is ready.'));
-      console.log(chalk.blue('\nNext steps:'));
-      console.log(chalk.cyan(`  cd ${targetDir}`));
+      console.log(kleur.green().bold('\n✅ Success! Your monorepo is ready.'));
+      console.log(kleur.blue('\nNext steps:'));
+      console.log(kleur.cyan(`  cd ${targetDir}`));
       
       if (options.install === false) {
-        console.log(chalk.cyan(`  ${config.packageManager} install`));
+        console.log(kleur.cyan(`  ${config.packageManager} install`));
       }
       
-      console.log(chalk.cyan('  npm run dev'));
+      console.log(kleur.cyan('  npm run dev'));
       
       // Show Docker instructions if Docker was enabled
       if (config.addDocker) {
-        console.log(chalk.blue('\n🐳 Docker Usage:'));
-        console.log(chalk.cyan('  npm run docker:build'));
-        console.log(chalk.cyan('  npm run docker:up'));
-        console.log(chalk.gray('  # Or: docker-compose up --build'));
+        console.log(kleur.blue('\n🐳 Docker Usage:'));
+        console.log(kleur.cyan('  npm run docker:build'));
+        console.log(kleur.cyan('  npm run docker:up'));
+        console.log(kleur.gray('  # Or: docker-compose up --build'));
       }
       
-      console.log(chalk.blue('\nHappy coding! 🎉\n'));
+      console.log(kleur.blue('\nHappy coding! 🎉\n'));
 
     } catch (error) {
-      console.error(chalk.red('Error creating project:'), error.message);
+      console.error(kleur.red('Error creating project:'), error.message);
       
       // Cleanup on error
       if (fs.existsSync(projectPath)) {
@@ -356,6 +361,29 @@ async function updatePackageJson(projectName) {
   packageJson.name = projectName;
   
   fs.writeJsonSync(packageJsonPath, packageJson, { spaces: 2 });
+}
+
+async function fixViteConfig() {
+  const viteConfigPath = 'client/vite.config.ts';
+  
+  if (fs.existsSync(viteConfigPath)) {
+    let viteConfig = fs.readFileSync(viteConfigPath, 'utf8');
+    
+    // Replace CommonJS require with ESM import
+    viteConfig = viteConfig.replace(
+      /const\s+{\s*defineConfig\s*}\s*=\s*require\(['"]vite['"]\);/g,
+      "import { defineConfig } from 'vite';"
+    );
+    
+    // Also handle any other require statements for vite plugins
+    viteConfig = viteConfig.replace(
+      /const\s+(\w+)\s*=\s*require\(['"]@vitejs\/plugin-react['"]\);/g,
+      "import $1 from '@vitejs/plugin-react';"
+    );
+    
+    fs.writeFileSync(viteConfigPath, viteConfig);
+    console.log(kleur.green('✅ Fixed Vite configuration for ESM compatibility'));
+  }
 }
 
 async function createReadme(projectName) {
