@@ -1,4 +1,4 @@
-# create-nest-react-monorepo
+# nest-react-monorepo
 
 A CLI tool to create a new NestJS + React monorepo with TypeScript, powered by Nx.
 
@@ -60,20 +60,24 @@ The generated project includes:
 ```
 my-project/
 ├── client/                 # React frontend application
-│   ├── src/
-│   ├── Dockerfile         # Production Docker image
-│   ├── Dockerfile.dev     # Development Docker image
-│   ├── nginx.conf         # Nginx configuration
-│   └── package.json
+│   ├── src/               # React source code
+│   ├── public/            # Static assets
+│   ├── index.html         # HTML template
+│   ├── vite.config.ts     # Vite configuration
+│   ├── Dockerfile         # Docker configuration (if enabled)
+│   └── package.json       # Client dependencies
 ├── server/                 # NestJS backend application
-│   ├── src/
-│   ├── Dockerfile         # Production Docker image
-│   ├── Dockerfile.dev     # Development Docker image
-│   └── package.json
-├── docker-compose.yml      # Production docker compose
-├── docker-compose.dev.yml  # Development docker compose
-├── nx.json                # Nx workspace configuration
-└── package.json           # Root package.json
+│   ├── src/               # NestJS source code
+│   ├── webpack.config.js  # Webpack configuration
+│   ├── Dockerfile         # Docker configuration (if enabled)
+│   └── package.json       # Server dependencies
+├── client-e2e/            # Client end-to-end tests
+├── server-e2e/            # Server end-to-end tests
+├── packages/              # Shared packages (if any)
+├── docker-compose.yml     # Docker Compose configuration (if enabled)
+├── nx.json               # Nx workspace configuration
+├── tsconfig.base.json    # Base TypeScript configuration
+└── package.json          # Root package.json with workspace scripts
 ```
 
 ## Available Scripts
@@ -96,9 +100,33 @@ After creating your project, you can run:
 - `npm run test:client` - Run client tests only
 
 ### Docker
-- `npm run docker:dev` - Start development containers
-- `npm run docker:up` - Start production containers
 - `npm run docker:build` - Build Docker images
+- `npm run docker:up` - Start containers
+- `npm run docker:down` - Stop containers
+
+## Docker Usage
+
+If you enabled Docker during setup, you can run the project using Docker:
+
+```bash
+# Build and start with Docker
+npm run docker:build
+npm run docker:up
+
+# Or use docker-compose directly
+docker-compose up --build
+
+# Stop containers
+npm run docker:down
+# or
+docker-compose down
+```
+
+**Docker Benefits:**
+- Consistent environment across different machines
+- Easy deployment to production
+- Isolated dependencies
+- No need to install Node.js locally
 
 ## Requirements
 

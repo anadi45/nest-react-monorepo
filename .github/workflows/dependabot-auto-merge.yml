@@ -31,13 +31,33 @@ jobs:
 
       - name: Test CLI tool
         run: |
-          cd create-package
-          npm ci
-          npm run build
+          # Test CLI in a temporary directory
           cd /tmp
           node $GITHUB_WORKSPACE/create-package/bin/cli.js dependabot-test --no-install
-          test -d dependabot-test/client
-          test -d dependabot-test/server
+          
+          # Verify the project was created correctly
+          test -d dependabot-test/client "Client directory should exist"
+          test -d dependabot-test/server "Server directory should exist"
+          test -f dependabot-test/package.json "Root package.json should exist"
+          test -f dependabot-test/nx.json "Nx config should exist"
+          
+          echo "✅ CLI test passed!"
+
+      - name: Test generated project
+        run: |
+          cd /tmp/dependabot-test
+          npm ci
+          
+          # Test that the generated project can build
+          npm run build:server
+          npm run build:client
+          
+          echo "✅ Generated project test passed!"
+
+      - name: Cleanup test files
+        if: always()
+        run: |
+          rm -rf /tmp/dependabot-test
 
       - name: Enable auto-merge for Dependabot PRs
         if: success()
