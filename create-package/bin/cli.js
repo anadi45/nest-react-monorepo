@@ -233,14 +233,14 @@ program
 
 // Helper functions
 async function addDockerConfig() {
-  // Add Docker configurations
+  // Add Docker configuration - single boilerplate for both development and production
   const dockerComposeContent = `version: '3.8'
 
 services:
   client:
     build:
       context: ./client
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     ports:
       - "5173:5173"
     volumes:
@@ -248,39 +248,13 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+    depends_on:
+      - server
 
   server:
     build:
       context: ./server
-      dockerfile: Dockerfile.dev
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./server:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-`;
-
-  const dockerComposeDevContent = `version: '3.8'
-
-services:
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile.dev
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./client:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-
-  server:
-    build:
-      context: ./server
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     volumes:
@@ -291,39 +265,50 @@ services:
 `;
 
   fs.writeFileSync('docker-compose.yml', dockerComposeContent);
-  fs.writeFileSync('docker-compose.dev.yml', dockerComposeDevContent);
 
   // Add Dockerfiles for client and server
   const clientDockerfile = `FROM node:18-alpine
 
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
-RUN npm install
 
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
 COPY . .
 
+# Expose port
 EXPOSE 5173
 
-CMD ["npm", "run", "dev"]
+# Start development server
+CMD ["npm", "run", "serve"]
 `;
 
   const serverDockerfile = `FROM node:18-alpine
 
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
-RUN npm install
 
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
 COPY . .
 
+# Expose port
 EXPOSE 3000
 
+# Start server
 CMD ["npm", "run", "serve"]
 `;
 
-  fs.writeFileSync('client/Dockerfile.dev', clientDockerfile);
-  fs.writeFileSync('server/Dockerfile.dev', serverDockerfile);
+  fs.writeFileSync('client/Dockerfile', clientDockerfile);
+  fs.writeFileSync('server/Dockerfile', serverDockerfile);
 }
 
 async function addTestingConfig() {
@@ -355,7 +340,6 @@ async function updatePackageJson(projectName) {
     'docker:build': 'docker-compose build',
     'docker:up': 'docker-compose up',
     'docker:down': 'docker-compose down',
-    'docker:dev': 'docker-compose -f docker-compose.dev.yml up',
     'graph': 'nx graph'
   };
 
@@ -384,9 +368,10 @@ A modern, production-ready monorepo featuring NestJS backend and React frontend 
 
 \`\`\`
 ├── client/                 # React frontend application
+│   └── Dockerfile         # Client Docker configuration
 ├── server/                 # NestJS backend application
-├── docker-compose.yml      # Production docker compose
-├── docker-compose.dev.yml  # Development docker compose
+│   └── Dockerfile         # Server Docker configuration
+├── docker-compose.yml      # Docker Compose configuration
 ├── nx.json                # Nx workspace configuration
 └── package.json           # Root package.json with workspace scripts
 \`\`\`
@@ -418,12 +403,14 @@ A modern, production-ready monorepo featuring NestJS backend and React frontend 
 
 ### Docker Development
 
-1. **Start with Docker Compose (Development)**
+1. **Start with Docker Compose**
    \`\`\`bash
-   # Start both services in development mode with hot reload
-   npm run docker:dev
-   # or
-   docker-compose -f docker-compose.dev.yml up
+   # Build and start both services
+   npm run docker:build
+   npm run docker:up
+   
+   # Or use docker-compose directly
+   docker-compose up --build
    \`\`\`
 
 2. **Access the applications**
@@ -436,7 +423,9 @@ A modern, production-ready monorepo featuring NestJS backend and React frontend 
 - \`npm run build\` - Build both applications for production
 - \`npm run test\` - Run tests for both applications
 - \`npm run lint\` - Lint both applications
-- \`npm run docker:dev\` - Start development environment with Docker
+- \`npm run docker:up\` - Start applications with Docker
+- \`npm run docker:build\` - Build Docker images
+- \`npm run docker:down\` - Stop Docker containers
 
 ## 🌟 Community
 
