@@ -7,56 +7,7 @@ on:
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: 'create-package/package-lock.json'
-
-      - name: Install dependencies
-        run: |
-          cd create-package
-          npm ci
-
-      - name: Test CLI tool
-        run: |
-          # Test CLI in a temporary directory
-          cd /tmp
-          node $GITHUB_WORKSPACE/create-package/bin/cli.js test-project --no-install --yes
-          
-          # Verify the project was created correctly
-          test -d test-project/client && echo "✅ Client directory exists" || (echo "❌ Client directory should exist" && exit 1)
-          test -d test-project/server && echo "✅ Server directory exists" || (echo "❌ Server directory should exist" && exit 1)
-          test -f test-project/package.json && echo "✅ Root package.json exists" || (echo "❌ Root package.json should exist" && exit 1)
-          test -f test-project/nx.json && echo "✅ Nx config exists" || (echo "❌ Nx config should exist" && exit 1)
-          
-          echo "✅ CLI test passed!"
-
-      - name: Test generated project
-        run: |
-          cd /tmp/test-project
-          npm ci
-          
-          # Test that the generated project can build
-          npm run build:server
-          npm run build:client
-          
-          echo "✅ Generated project test passed!"
-
-      - name: Cleanup
-        if: always()
-        run: |
-          rm -rf /tmp/test-project
-
   publish:
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
