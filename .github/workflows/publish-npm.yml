@@ -29,13 +29,13 @@ jobs:
         run: |
           # Test CLI in a temporary directory
           cd /tmp
-          node $GITHUB_WORKSPACE/create-package/bin/cli.js test-project --no-install
+          node $GITHUB_WORKSPACE/create-package/bin/cli.js test-project --no-install --yes
           
           # Verify the project was created correctly
-          test -d test-project/client "Client directory should exist"
-          test -d test-project/server "Server directory should exist"
-          test -f test-project/package.json "Root package.json should exist"
-          test -f test-project/nx.json "Nx config should exist"
+          test -d test-project/client && echo "✅ Client directory exists" || (echo "❌ Client directory should exist" && exit 1)
+          test -d test-project/server && echo "✅ Server directory exists" || (echo "❌ Server directory should exist" && exit 1)
+          test -f test-project/package.json && echo "✅ Root package.json exists" || (echo "❌ Root package.json should exist" && exit 1)
+          test -f test-project/nx.json && echo "✅ Nx config exists" || (echo "❌ Nx config should exist" && exit 1)
           
           echo "✅ CLI test passed!"
 
