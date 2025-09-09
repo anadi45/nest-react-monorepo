@@ -22,12 +22,17 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: 'create-package/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd create-package
+          npm ci
 
       - name: Run tests
-        run: npm test
+        run: |
+          cd create-package
+          npm test
 
       - name: Test CLI tool
         run: |
