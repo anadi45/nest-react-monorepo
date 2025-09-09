@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -19,13 +20,20 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}  # Fetch full history for version calculation
 
-      - name: Setup Node.js
+      - name: Setup Node.js for NPM
         uses: actions/setup-node@v5
         with:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
           cache-dependency-path: 'create-package/package-lock.json'
+
+      - name: Setup Node.js for GitHub Packages
+        uses: actions/setup-node@v5
+        with:
+          node-version: '18'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@anadi45'
 
       - name: Install dependencies
         run: |
@@ -125,6 +133,17 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Publish to GitHub Packages
+        if: steps.version_check.outputs.should_publish == 'true'
+        run: |
+          cd create-package
+          # Update package.json to use GitHub packages scope
+          npm pkg set name="@anadi45/nest-react-monorepo"
+          npm pkg set publishConfig.registry="https://npm.pkg.github.com"
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Git tag and push
         if: steps.version_check.outputs.should_publish == 'true'
         run: |
@@ -151,42 +170,9 @@ jobs:
           
           # Create changelog
           cat > CHANGELOG.md << EOF
-          ## What's Changed in v${{ steps.version.outputs.new_version }}
+          ## What's Changed in v${{ steps.version_check.outputs.new_version }}
           
           $COMMITS
-          
-          ### 🚀 Quick Start
-          \`\`\`bash
-          npx create-nest-react-monorepo my-awesome-app
-          cd my-awesome-app  
-          npm run dev
-          \`\`\`
-          
-          ### ✨ Features
-          - ⚡ **Dynamic Generation**: Always up-to-date with latest versions
-          - ⚡ NestJS backend with TypeScript
-          - ⚛️ React frontend with TypeScript and Vite/Webpack
-          - 🏗️ Nx monorepo architecture  
-          - 🐳 Docker support (development & production)
-          - 🧪 Jest testing setup
-          - 🔧 ESLint configuration
-          - 🚀 Hot reload development
-          - 🎯 Interactive setup with user choices
-          - 🔄 Future-proof (no static templates to maintain)
-          
-          ### 📦 Installation
-          \`\`\`bash
-          npx create-nest-react-monorepo my-project
-          cd my-project
-          npm run dev
-          \`\`\`
-          
-          ### 🎛️ Options
-          - Choose package manager (npm, yarn, pnpm)
-          - Select bundler (Vite or Webpack)
-          - Optional Docker configuration
-          - Optional testing setup
-          - Version control for React, NestJS, and Nx
           EOF
           
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
@@ -195,12 +181,13 @@ jobs:
 
       - name: Create GitHub Release
         if: steps.version_check.outputs.should_publish == 'true'
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.new_version }}
-          release_name: Release v${{ steps.version.outputs.new_version }}
+          tag_name: v${{ steps.version_check.outputs.new_version }}
+          name: Release v${{ steps.version_check.outputs.new_version }}
           body: ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
