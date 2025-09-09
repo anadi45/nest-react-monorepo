@@ -25,9 +25,12 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: ${{ matrix.package-manager }}
+          cache-dependency-path: 'create-package/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd create-package
+          npm ci
 
       - name: Test CLI tool with ${{ matrix.package-manager }}
         run: |
@@ -83,9 +86,12 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: 'create-package/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd create-package
+          npm ci
 
       - name: Test CLI with different options
         run: |
@@ -124,9 +130,12 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: 'create-package/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd create-package
+          npm ci
 
       - name: Test CLI help and version
         run: |
@@ -150,9 +159,12 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: 'create-package/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd create-package
+          npm ci
 
       - name: Test error handling
         run: |

@@ -18,9 +18,12 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: 'create-package/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd create-package
+          npm ci
 
       - name: Test CLI tool
         run: |
@@ -67,9 +70,12 @@ jobs:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+          cache-dependency-path: 'create-package/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd create-package
+          npm ci
 
       - name: Determine version bump
         id: version
