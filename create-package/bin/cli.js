@@ -248,17 +248,19 @@ program
 // Helper functions
 async function addDockerConfig() {
   // Add Docker configuration - single boilerplate for both development and production
-  const dockerComposeContent = `version: '3.8'
-
-services:
+  const dockerComposeContent = `services:
   client:
     build:
-      context: ./client
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./client/Dockerfile
     ports:
       - "5173:5173"
     volumes:
-      - ./client:/app
+      - ./client:/app/client
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./nx.json:/app/nx.json
+      - ./tsconfig.base.json:/app/tsconfig.base.json
       - /app/node_modules
     environment:
       - NODE_ENV=development
@@ -267,12 +269,16 @@ services:
 
   server:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./server/Dockerfile
     ports:
       - "3000:3000"
     volumes:
-      - ./server:/app
+      - ./server:/app/server
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./nx.json:/app/nx.json
+      - ./tsconfig.base.json:/app/tsconfig.base.json
       - /app/node_modules
     environment:
       - NODE_ENV=development
@@ -285,40 +291,44 @@ services:
 
 WORKDIR /app
 
-# Copy package files
+# Copy root package files (needed for Nx monorepo)
 COPY package*.json ./
+COPY nx.json ./
+COPY tsconfig.base.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including dev dependencies for build)
+RUN npm install
 
-# Copy source code
-COPY . .
+# Copy client source code
+COPY client/ ./client/
 
 # Expose port
 EXPOSE 5173
 
 # Start development server
-CMD ["npm", "run", "serve"]
+CMD ["npm", "run", "dev:client"]
 `;
 
   const serverDockerfile = `FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy root package files (needed for Nx monorepo)
 COPY package*.json ./
+COPY nx.json ./
+COPY tsconfig.base.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including dev dependencies for build)
+RUN npm install
 
-# Copy source code
-COPY . .
+# Copy server source code
+COPY server/ ./server/
 
 # Expose port
 EXPOSE 3000
 
-# Start server
-CMD ["npm", "run", "serve"]
+# Start development server
+CMD ["npm", "run", "dev:server"]
 `;
 
   fs.writeFileSync('client/Dockerfile', clientDockerfile);
@@ -355,6 +365,12 @@ async function updatePackageJson(projectName) {
     'docker:up': 'docker-compose up',
     'docker:down': 'docker-compose down',
     'graph': 'nx graph'
+  };
+
+  // Add necessary dependencies for the scripts
+  packageJson.dependencies = {
+    ...packageJson.dependencies,
+    'concurrently': '^8.2.2'
   };
 
   // Update project name
