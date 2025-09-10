@@ -397,8 +397,19 @@ async function fixViteConfig() {
       "import $1 from '@vitejs/plugin-react';"
     );
     
+    // Add port configuration to use Vite's default port 5173
+    if (!viteConfig.includes('server:')) {
+      viteConfig = viteConfig.replace(
+        /export default defineConfig\(\{/,
+        `export default defineConfig({
+  server: {
+    port: 5173,
+  },`
+      );
+    }
+    
     fs.writeFileSync(viteConfigPath, viteConfig);
-    console.log(kleur.green('✅ Fixed Vite configuration for ESM compatibility'));
+    console.log(kleur.green('✅ Fixed Vite configuration for ESM compatibility and port 5173'));
   }
 }
 
@@ -451,7 +462,7 @@ A modern, production-ready monorepo featuring NestJS backend and React frontend 
    
    # Or start them individually
    npm run dev:server  # NestJS server on http://localhost:3000
-   npm run dev:client  # React app on http://localhost:5173
+   npm run dev:client  # React app on http://localhost:5173 (Vite default)
    \`\`\`
 
 ### Docker Development
@@ -467,7 +478,7 @@ A modern, production-ready monorepo featuring NestJS backend and React frontend 
    \`\`\`
 
 2. **Access the applications**
-   - Frontend: http://localhost:5173
+   - Frontend: http://localhost:5173 (Vite default)
    - Backend API: http://localhost:3000
 
 ## Available Scripts
