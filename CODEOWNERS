@@ -1,0 +1,13 @@
+# Global code owners
+* @anadi45
+
+# Package-specific owners
+/create-package/ @anadi45
+/bin/ @anadi45
+
+# Documentation
+README.md @anadi45
+LICENSE @anadi45
+
+# GitHub workflows
+/.github/ @anadi45
