@@ -21,7 +21,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}  # Fetch full history for version calculation
 
       - name: Setup Node.js for NPM
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
@@ -29,7 +29,7 @@ jobs:
           cache-dependency-path: 'create-package/package-lock.json'
 
       - name: Setup Node.js for GitHub Packages
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '18'
           registry-url: 'https://npm.pkg.github.com'
